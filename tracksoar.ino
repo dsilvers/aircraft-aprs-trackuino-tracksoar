@@ -64,6 +64,7 @@ static int32_t last_beacon_time = 0;
 static int32_t last_beacon_course = 0;
 static int32_t beacon_rate = 0;
 int valid_pos = 0;
+int current_time = millis() / 1000;
 
 void setup()
 {
@@ -99,10 +100,33 @@ void loop()
   wdt_reset();
   get_pos();
 
+  current_time = millis() / 1000;
+
+#ifdef DEBUG_BEACONS
+  Serial.print("GPS satellites: ");
+  Serial.print(gps_num_sats);
+  Serial.print("\n");
+#endif
+
   if (valid_pos) {
+
+#ifdef DEBUG_BEACONS
+    Serial.print("GPS speed: ");
+    Serial.print(gps_speed);
+    Serial.print("\nGPS course: ");
+    Serial.print(gps_course);
+    Serial.print("\tLast Beacon Course: ");
+    Serial.print(last_beacon_course);
+    Serial.print("\tCourse Change: ");
+    Serial.print(abs(last_beacon_course - gps_course));
+    Serial.print("\n");
+#endif
 
     // Moving slowly or not moving at all
     if (gps_speed < BEACON_SLOW_SPEED) {
+#ifdef DEBUG_BEACONS
+      Serial.println("### Moving slow");
+#endif
       beacon_rate = BEACON_SLOW_RATE;
     } 
     
@@ -110,31 +134,58 @@ void loop()
       
       // Moving VERY fast
       if (gps_speed > BEACON_FAST_SPEED) {
+#ifdef DEBUG_BEACONS
+        Serial.println("### Moving FAST");
+#endif
         beacon_rate = BEACON_FAST_RATE;
       }
       // Moving medium speed
       else {
+#ifdef DEBUG_BEACONS
+        Serial.println("### Moving medium speed");
+#endif
         beacon_rate = BEACON_FAST_RATE * BEACON_FAST_SPEED / gps_speed;
       }
 
       // Corner pegging
       if ( abs(last_beacon_course - gps_course) > BEACON_MIN_TURN_ANGLE + BEACON_TURN_SLOPE / gps_speed &&
-        millis() - last_beacon_time > BEACON_MIN_TURN_TIME) {
-
+        current_time - last_beacon_time > BEACON_MIN_TURN_TIME) {
+#ifdef DEBUG_BEACONS
+        Serial.println("### Corner pegged, probably turned");
+#endif
         last_beacon_time = beacon_rate;
       }
     }
 
-    if (millis() - last_beacon_time > beacon_rate) {
-      last_beacon_time = millis();
+#ifdef DEBUG_BEACONS
+    Serial.print("Time Since Last Packet: ");
+    Serial.print(current_time - last_beacon_time);
+    Serial.print("Beacon Rate: ");
+    Serial.print(beacon_rate);
+    Serial.print("\tLast Beacon: ");
+    Serial.print(last_beacon_time);
+    Serial.print("\tTime: ");
+    Serial.print(current_time);
+    Serial.print("\n");
+#endif
+
+    if (current_time - last_beacon_time > beacon_rate) {
+#ifdef DEBUG_BEACONS
+      Serial.println("+ Sending packet");
+#endif
+      last_beacon_time = current_time;
       last_beacon_course = gps_course;
       aprs_send();
       wdt_reset();
       while (afsk_flush()) {
-        power_save();
+        //power_save();
         wdt_reset();
       }
     }
+  }
+  else {
+    Serial.println("Waiting for GPS position");
+    delay(2000);
   }
 }
 

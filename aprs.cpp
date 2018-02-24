@@ -35,8 +35,8 @@
 #define _ENABLE_BME280_HUMIDITY
 
 // Module variables
-static int32_t last_packet_time = 0;
-
+static int32_t last_telemetry_time = 0;
+static int32_t last_comment_time = 0;
 
 // Module functions
 float meters_to_feet(float m)
@@ -83,7 +83,7 @@ void aprs_send()
   ax25_send_string(temp);
 
   // Only send sensor data when we need to
-  if (millis() - APRS_SENSOR_DATA_INTERVAL > last_packet_time) {
+  if (millis() / 1000 - APRS_SENSOR_DATA_INTERVAL > last_telemetry_time) {
 
 #ifdef _ENABLE_BME280_PRESSURE  
   // Pressure: "/Pa=12345"
@@ -107,26 +107,17 @@ void aprs_send()
   ax25_send_string(temp);
 #endif  //_ENABLE_BME280_TEMPERATURE
 
-  // 
-//   ax25_send_string("/Ti=");
-//   snprintf(temp, 6, "%d", sensors_int_lm60());
-//   ax25_send_string(temp);
-//   ax25_send_string("/Te=");
-//   snprintf(temp, 6, "%d", sensors_ext_lm60());
-//   ax25_send_string(temp);
-//  ax25_send_string("/V=");
-//  snprintf(temp, 6, "%d", sensors_vin());
-//  ax25_send_string(temp);
+
+    last_telemetry_time = millis() / 1000;
   }
 
-  if (millis() - APRS_COMMENT_INTERVAL > last_packet_time) {
+  if (millis() / 1000 - APRS_COMMENT_INTERVAL > last_comment_time) {
     ax25_send_byte(' ');
     ax25_send_string(APRS_COMMENT);     // Comment
+
+    last_comment_time = millis() / 1000;
   }
   
   ax25_send_footer();
-
   ax25_flush_frame();                 // Tell the modem to go
-  
-  last_packet_time = millis();
 }

@@ -81,7 +81,7 @@
 // it is to noise. 
 #define APRS_COMMENT    "Tracksoar 1.2, https://git.io/vAVwl"
 
-// Only send comment every 5 minutes. Set this to zero to make always send comment.
+// Only send comment every 10 minutes. Set this to zero to make always send comment.
 #define APRS_COMMENT_INTERVAL 600
 
 // --------------------------------------------------------------------------
@@ -215,6 +215,7 @@
 // 3. When flashing the firmware, disconnect the GPS from the RX pin or you
 //    will get errors.
 
+#define DEBUG_BEACONS // Beacon calculation algorithm
 // #define DEBUG_GPS    // GPS sentence dump and checksum validation
  #define DEBUG_AX25   // AX.25 frame dump
 // #define DEBUG_MODEM  // Modem ISR overrun and profiling
